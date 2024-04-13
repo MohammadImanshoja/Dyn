@@ -1,0 +1,126 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.optimize import fsolve
+
+def dx_dtau(x, h):
+    return x * (1 - x) - h
+h_values_part1 = [0, 0.1, 0.2]
+h_value_critical = [0.25]
+h_values_part2 = [1, 2]
+
+x_range = np.linspace(0, 10, 100)
+
+# Plot for h_values_part1
+for h in h_values_part1:
+    plt.figure(figsize=(8, 4))
+    dx_dtau_vals = dx_dtau(x_range, h)
+    plt.plot(x_range, dx_dtau_vals, label=f'h={h}')
+
+    # Use fsolve to find the roots of dx/dtau = 0 for the given value of h
+    roots1 = fsolve(dx_dtau, [0, 1], args=(h,))
+    #green arrows
+    for x_fixed in roots1:
+        # Stability analysis
+        second_derivative = -2 * x_fixed + 1
+        if second_derivative < 0:
+            arrow_color = 'green'
+            arrow_direction = -1  # Left to right
+        else:
+            continue  
+        arrow_length = 0.1  
+        arrow_pos = dx_dtau(x_fixed, h)
+      
+        # Create green arrows
+        if arrow_color == 'green':
+            plt.arrow(x_fixed - arrow_direction * arrow_length, arrow_pos, arrow_direction * arrow_length, 0, head_width=0.08, head_length=0.02, fc=arrow_color, ec=arrow_color)
+            plt.arrow(x_fixed + arrow_direction * arrow_length, arrow_pos, -arrow_direction * arrow_length, 0, head_width=0.08, head_length=0.02, fc=arrow_color, ec=arrow_color)
+    
+    # Red arrows
+    for x_fixed in roots1:
+        # Stability analysis
+        second_derivative = -2 * x_fixed + 1
+        if second_derivative > 0:
+            arrow_color = 'red'
+            arrow_direction = 1  # Right to left
+        else:
+            continue  
+        arrow_length = 0.1  
+        arrow_pos = dx_dtau(x_fixed, h)
+        # Create red arrows
+        if arrow_color == 'red':
+            plt.arrow(x_fixed, arrow_pos, +arrow_direction * arrow_length, 0, head_width=0.08, head_length=0.02, fc=arrow_color, ec=arrow_color)
+            plt.arrow(x_fixed, arrow_pos, -arrow_direction * arrow_length, 0, head_width=0.08, head_length=0.02, fc=arrow_color, ec=arrow_color)
+    plt.axhline(0, color='black', lw=1)
+    plt.title(f'Dynamics and Stability for h={h}')
+    plt.xlabel('x')
+    plt.ylabel('dx/dτ')
+    plt.ylim(-0.5,0.5)
+    plt.xlim(0, 1.5)  
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+for h in h_value_critical:
+    plt.figure(figsize=(8, 4))
+    dx_dtau_vals = dx_dtau(x_range, h)
+    plt.plot(x_range, dx_dtau_vals, label=f'h={h}')
+
+    # Use fsolve to find the roots of dx/dtau = 0 for the given value of h
+    roots2 = fsolve(dx_dtau, [0, 1], args=(h,))
+    # green arrows 
+    for x_fixed in roots2:
+        # Stability analysis
+        second_derivative = -2 * x_fixed + 1
+        if second_derivative < 0:
+            arrow_color = 'green'
+            arrow_direction = -1  # Left to right
+        else:
+            continue  
+        arrow_length = 0.1  
+        arrow_pos = dx_dtau(x_fixed, h)
+      
+        # Create green arrows
+        if arrow_color == 'green':
+            plt.arrow(x_fixed - arrow_direction * arrow_length, arrow_pos, arrow_direction * arrow_length, 0, head_width=0.08, head_length=0.02, fc=arrow_color, ec=arrow_color)
+            
+    # Red arrows
+    for x_fixed in roots2:
+        # Stability analysis
+        second_derivative = -2 * x_fixed + 1
+        if second_derivative > 0:
+            arrow_color = 'red'
+            arrow_direction = 1  # Right to left
+        else:
+            continue  
+        arrow_length = 0.1  
+        arrow_pos = dx_dtau(x_fixed, h)
+        # Create red arrows
+        if arrow_color == 'red':
+            plt.arrow(x_fixed, arrow_pos, -arrow_direction * arrow_length, 0, head_width=0.08, head_length=0.02, fc=arrow_color, ec=arrow_color)
+
+    plt.axhline(0, color='black', lw=1)
+    plt.title(f'Dynamics and Stability for h={h}')
+    plt.xlabel('x')
+    plt.ylabel('dx/dτ')
+    plt.ylim(-0.5,0.5)
+    plt.xlim(0, 1.5)  
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+# Plot for h_values_part2
+for h in h_values_part2:
+    plt.figure(figsize=(8, 4))
+    dx_dtau_vals = dx_dtau(x_range, h)
+    plt.plot(x_range, dx_dtau_vals, label=f'h={h}')
+
+    # Plot green arrow at x = 1/2
+    plt.arrow(0.5, dx_dtau(0.5, h),-0.1, 0, head_width=0.4, head_length=0.1, fc='green', ec='green')
+
+    plt.axhline(0, color='black', lw=1)
+    plt.title(f'Dynamics and Stability for h={h}')
+    plt.xlabel('x')
+    plt.ylabel('dx/dτ')
+    plt.ylim(-5, 5)
+    plt.xlim(0, 5)
+    plt.grid(True)
+    plt.legend()
+    plt.show()

@@ -1,2 +1,273 @@
+# Task 2: Population dynamics and model building
+
+## Lotka-Volterra
+
+Simple Predator-Prey relationships can be modeled using the Lotka-Volterra equation defined as:
+\begin{align}
+\frac{dX}{dt} &=  aX  - b XY  \qquad &a,b > 0\\
+\frac{dY}{dt} &= -cY + d XY\qquad &c,d > 0,
+\end{align}
+where X is the prey, Y is the predator and a,b,c,d are parameters relating the two species.
+
+Tasks:
+ 1. Using the Lotka-Volterra equation, run a stable (oscillating) simulation of the Predator-Prey relationship and plot it with the populations as a function of the time and the populations one over the other (that is e.g. prey over predator). Try to experiment with the parameters and the integration step sizes. Find some nice parameters and initial conditions.
+ 
+ 2. Extend the naive Lotka-Volterra function to the logistic Lotka-Volterra function:
+\begin{align}
+\frac{dX}{dt} &=  a(1 -\frac{X}{K})X  - b XY  \qquad &a,b,K > 0\\
+\frac{dY}{dt} &= -cY + d XY\qquad &c,d > 0,
+\end{align}
+adding the carrying capacity K and again run a simulation for the system. Plot the populations one over another and as functions of the time. What can you see? Does the trajectory change? Can you find non-trivial fix points (numerically)? 
+ 3. Plot the vector fields for the two simulations with the population of the predators on the Y axis and the prey on the X axis. Mark the fixpoints in your plots. Use the streamplot from matplotlib. Color the arrows accoring to the speed of the vector.
+ 4. Food chain: 
+    - Introduce a competing predator species to the equation. We call the new predator the uber-predator because it preys on the previous predator that now we call the weak predator. Apply the assumption that the weak predators do not decease due to natural causes but only by interaction with the uber-predator. The uber-predators do die of old age and obviously a sated uber-predator also likes to reproduce. The uber-predators ignore the prey (no interaction).
+    Expand the model starting from the logistic Lotka-Volterra.
+    - Estimate the parameters of your model so that you can fit the function in lotka_volterra_prey-predator-uberpredator.csv. A scoring function such as the sum of the difference squares might be a good starting point but any metric which allows for proper minimization is allowed. The carrying capacity is between 5 and 15. All the other parameters will be between 0.1 and 1.0.
+    - Run a simulation until t = 50. Estimate the non-trivial fixpoint and calculate the error to the analytical solution.
+    - Plot for each pair of species a plot with one species over the other.
+    - <b>Bonus</b>: Introduce a second competing prey species. The two prey species are essentially the same in the way they interact with each other and thus have a shared carrying capacity and the parameter determining their interaction with each other is 0.5. Their interaction with the predators is the same only that the second prey is preyed upon half as often (and thus only nurtures the predator only half as often). Here is the twist: the second prey is only an evolved first prey. Through selective pressure the first prey evolved to be more resilient and evolution is unidirectional (no evolving back from the second prey to the first prey). The mutation rate from prey one to prey two is 0.01. Start the simulation assuming there are no evolved species yet at time t = 0.
+    Using the parameters you estimated in task 4 plot a short simulation of the system (t = 10) with the species over time. Is there a species which dies out in the long run (t -> ∞)? Assume you cannot find that out from just plotting a long simulation. 
 
 
+
+
+
+
+
+import numpy as np
+from scipy.integrate import odeint
+import matplotlib.pyplot as plt
+import pandas as pd
+from scipy.optimize import minimize
+from scipy.optimize import fsolve
+# in this case we assume our prey is cow and our  predator is wolfes . 
+#it is noticiable that a cows would be a complete meal for numbers of wolfs 
+#so the abcence and presence of cows would dramaticaly influenced the population of wolfes, 
+#while the changes in the population of wolfes would influenced the cows population less than we said
+#also we assume wolfs would die faster than the rate of cow's birth (c>a)
+def lotka_volterra(preypred, t, a, b, c, d):
+    x, y = preypred
+    dxdt = a * x - b * x * y
+    dydt = -c * y + d * x * y
+    return [dxdt, dydt]
+
+# Parameters
+a, b, c, d = 2, 0.4, 3, 1 # example parameters
+
+# Initial number of prey and predators
+initial_conditions = [25, 25]
+
+# Time points to integrate over
+t = np.linspace(0, 160, 15000)
+
+# Integrate the equations over time
+solution = odeint(lotka_volterra, initial_conditions, t, args=(a, b, c, d))
+
+# Plot the results
+prey, predators = solution.T
+plt.figure(figsize=(14, 6))
+plt.plot(t, prey, label='Prey')
+plt.plot(t, predators, label='Predators')
+plt.xlabel('Time')
+plt.ylabel('Population')
+plt.legend()
+plt.show()
+# Finding the fixedpoint (numerically)
+import numpy as np
+
+# Define the logistic Lotka-Volterra model
+def lotka_volterra(preypred, t, a, b, c, d):
+    x, y = preypred
+    dxdt = a * x - b * x * y
+    dydt = -c * y + d * x * y
+    return [dxdt, dydt]
+
+# Define the parameters for the model
+a, b, c, d =  2, 0.4, 20, 1
+
+# Define a function to find the roots (fixed points) numerically
+def find_fixed_points():
+    # Define a function that returns the system of equations to be solved
+    def equations_to_solve(preypred):
+        return lotka_volterra(preypred, None, a, b, c, d)
+
+    # Use fsolve to find the roots
+    root = fsolve(equations_to_solve, [100, 100])  # starting point for the solver
+
+    return [root]  # Return as a list containing a single fixed point
+
+# Compute the fixed points numerically
+numerical_fixed_points = find_fixed_points()
+print("Numerical Fixed Points:", numerical_fixed_points)
+# Drawing the vector field and caculating the fixed points analytically 
+# Define the logistic Lotka-Volterra model
+def lotka_volterra(preypred, t, a, b, c, d):
+    x, y = preypred
+    dxdt = a * x - b * x * y
+    dydt = -c * y + d * x * y
+    return [dxdt, dydt]
+
+
+# Define the parameters for the model
+a, b, c, d =  2, 0.4, 20, 1
+x = np.linspace(0, 30, 2)
+y = np.linspace(0, 30, 2)
+X, Y = np.meshgrid(x, y)
+
+# Calculate the growth rates at each grid point
+DX, DY =  lotka_volterra([X, Y], 0, a, b, c, d)
+
+# Calculate the speed for coloring the arrows
+speed = np.sqrt(DX**2 + DY**2)
+
+#fixed points
+fixed_X = c/d
+fixed_Y = a/b 
+# Plot the vector field
+plt.streamplot(X, Y, DX, DY, color='black', linewidth=5, cmap=plt.cm.autumn)
+plt.xlabel('Prey Population')
+plt.ylabel('Predator Population')
+plt.title('Vector Field for the Lotka-Volterra Model')
+plt.streamplot(X, Y, DX, DY, color='blue', linewidth=2, cmap=plt.cm.autumn)
+
+# Mark the fixed points
+plt.plot( fixed_X, fixed_Y, 'ro')# non-trivial fix points
+plt.plot(0, 0, 'yd') #trivial fix points
+plt.show()
+
+
+
+
+
+
+
+
+
+def expanded_lotka_volterra(preypreduber, t, a, b, c, d, K, e, f):
+    x, y, z = preypreduber
+    dxdt = a * (1 - x / K) * x - b * x * y  # Prey growth
+    dydt = d * x * y - e * y * z            # Weak predator growth
+    dzdt = f * z * y - c * z                # Uber-predator growth
+    return [dxdt, dydt, dzdt]
+
+def score_function(params, t, data):
+    solution = odeint(expanded_lotka_volterra, [data.loc[0, 'Prey'], data.loc[0, 'Predator'], data.loc[0, 'Uberpredator']], t, args=tuple(params))
+    score = np.sum((solution - data[['Prey', 'Predator', 'Uberpredator']].values)**2)
+    return score
+
+def calculate_fixed_points(a, b, c, d, K, e, f):
+    y_fp = c / f
+    z_fp = K * d / e  - (K * d *b * c) / (e * a * f)
+    x_fp = K - (K * b * c) / (f * a)
+    return x_fp, y_fp, z_fp
+
+#reading the data
+
+data = pd.read_csv(r"C:\Users\moham\OneDrive\Desktop\lotka_volterra_prey-predator-uberpredator (2) gaaediiiii.csv")
+t = np.linspace(0, 50, len(data))  # Assuming data covers t=0 to t=50
+
+# Example initial guess according to bounds
+initial_guess = [0.5, 0.5, 0.5, 0.5, 5, 0.5, 0.5]
+
+# Bounds as question requested
+bounds = [(0.1, 1.0), (0.1, 1.0), (0.1, 1.0), (0.1, 1.0), (5, 15), (0.1, 1.0), (0.1, 1.0)]
+
+# Optimization with bounds
+result = minimize(score_function, initial_guess, args=(t, data), method='L-BFGS-B', bounds=bounds)
+
+# Plotting
+solution = odeint(expanded_lotka_volterra, [data.loc[0, 'Prey'], data.loc[0, 'Predator'], data.loc[0, 'Uberpredator']], t, args=tuple(result.x))
+
+plt.figure(figsize=(12, 8))
+plt.plot(t, solution[:, 0], label='Prey (Model)')
+plt.plot(t, solution[:, 1], label='Weak Predator (Model)')
+plt.plot(t, solution[:, 2], label='Uber-Predator (Model)')
+plt.plot(data['Time'], data['Prey'], 'o', label='Prey (Data)')
+plt.plot(data['Time'], data['Predator'], 'o', label='Weak Predator (Data)')
+plt.plot(data['Time'], data['Uberpredator'], 'o', label='Uber-Predator (Data)')
+
+
+plt.legend()
+plt.xlabel('Time')
+plt.ylabel('Population')
+plt.show()
+
+# Predicted parameters
+params = result.x
+print(params)
+# Analytically calculated fixed points using predicted parameters
+analytical_fixed_points = calculate_fixed_points(*params)
+
+# Fixed points predicted by the optimized parameters
+solution = odeint(expanded_lotka_volterra, [data.loc[0, 'Prey'], data.loc[0, 'Predator'], data.loc[0, 'Uberpredator']], t, args=tuple(params))
+optimized_fixed_points = solution[-1]
+
+# Calculate error between predicted and analytical fixed points
+error = np.abs(np.array(optimized_fixed_points) - np.array(analytical_fixed_points))
+
+print("Analytical Fixed Points:", analytical_fixed_points)
+print("Optimized Fixed Points:", optimized_fixed_points)
+print("Error:", error)
+print(params)
+plt.figure(figsize=(12, 8))
+
+# Plot Prey vs Weak Predator
+plt.subplot(2, 2, 1)
+plt.plot(solution[:, 0], solution[:, 1], label='Prey vs Weak Predator (Model)')
+plt.scatter(data['Prey'], data['Predator'], label='Prey vs Weak Predator (Data)')
+plt.xlabel('Prey Population')
+plt.ylabel('Weak Predator Population')
+plt.legend()
+
+# Plot Prey vs Uber-Predator
+plt.subplot(2, 2, 2)
+plt.plot(solution[:, 0], solution[:, 2], label='Prey vs Uber-Predator (Model)')
+plt.scatter(data['Prey'], data['Uberpredator'], label='Prey vs Uber-Predator (Data)')
+plt.xlabel('Prey Population')
+plt.ylabel('Uber-Predator Population')
+plt.legend()
+
+# Plot Weak Predator vs Uber-Predator
+plt.subplot(2, 2, 3)
+plt.plot(solution[:, 1], solution[:, 2], label='Weak Predator vs Uber-Predator (Model)')
+plt.scatter(data['Predator'], data['Uberpredator'], label='Weak Predator vs Uber-Predator (Data)')
+plt.xlabel('Weak Predator Population')
+plt.ylabel('Uber-Predator Population')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+# parameters from our previous calculation on our data (file.csv)
+a, b, c, d, K, e, f = 0.90318844, 0.24886636, 0.18249965, 0.50418394, 7.58780097, 0.70611202, 0.1
+g = 0.5 * b  # Reduced predation rate on Prey 2
+r = a  # Assuming growth rate for Prey 2 is the same because basicly they are same species
+
+# Updated model equations with considerations
+def  double_competitive_Lotka_Volterra_function(preypreduber, t):
+    x, m, y, z = preypreduber
+    dxdt = a * (1 - (x + m) / K) * x - b * x * y - 0.01 * x
+    dmdt = r * (1 - (x + m) / K) * m + 0.01 * x - g * y * m
+    dydt = 0.5 * d * x * y + 0.5 * d * y * m - e * y * z
+    dzdt = f * z * y - c * z
+    return [dxdt, dmdt, dydt, dzdt]
+
+# Initial conditions
+initial_conditions = [5.0, 0.0, 3.0, 2.0]  # 0.0 according to question, others according the first columns of our csv.data file at t = 0
+
+# Time points
+t = np.linspace(0, 100, 10000)
+
+# Solve ODE
+solution = odeint(double_competitive_Lotka_Volterra_function, initial_conditions, t)
+
+# Plot results
+plt.figure(figsize=(12, 8))
+plt.plot(t, solution[:, 0], label='Prey 1')
+plt.plot(t, solution[:, 1], label='Prey 2')
+plt.plot(t, solution[:, 2], label='Weak Predator')
+plt.plot(t, solution[:, 3], label='Uber Predator')
+plt.xlabel('Time')
+plt.ylabel('Population')
+plt.legend()
+plt.title('Dynamics of Modified Two Prey and Two Predator Model')
+plt.show()
